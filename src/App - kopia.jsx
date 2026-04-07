@@ -1,93 +1,50 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-const WORLD_WIDTH = 2400;
+const WORLD_WIDTH = 2200;
 const WORLD_HEIGHT = 420;
-const GRAVITY = 0.78;
-const MOVE_SPEED = 4.6;
+const GRAVITY = 0.75;
+const MOVE_SPEED = 4.5;
 const JUMP_POWER = -12.9;
-const DOUBLE_JUMP_POWER = -11.8;
 const MAX_LIVES = 3;
 const MIN_X = 60;
 const CRASH_RECOVERY_MS = 650;
 const INVULNERABLE_AFTER_RESPAWN_MS = 900;
 
-const levels = [
-  {
-    id: 1,
-    name: "Level 1",
-    subtitle: "Eldgropar",
-    playerStart: { x: 60, y: 280 },
-    goal: { x: 2200, y: 255, w: 58, h: 85 },
-    platformColorA: ["#e23d61", "#5b1027", "#ff9bb1", "#b83657"],
-    platformColorB: ["#b46cff", "#35125c", "#d6b2ff", "#8f52ff"],
-    flameColors: ["#ff3b00", "#ff7a00", "#ffd54a"],
-    platforms: [
-      { x: 0, y: 340, w: 340, h: 80 },
-      { x: 430, y: 310, w: 140, h: 20 },
-      { x: 650, y: 280, w: 130, h: 20 },
-      { x: 860, y: 250, w: 150, h: 20 },
-      { x: 1100, y: 310, w: 170, h: 20 },
-      { x: 1380, y: 280, w: 150, h: 20 },
-      { x: 1600, y: 250, w: 140, h: 20 },
-      { x: 1830, y: 290, w: 180, h: 20 },
-      { x: 2010, y: 260, w: 130, h: 20 },
-      { x: 2160, y: 340, w: 240, h: 80 },
-    ],
-    hazards: [
-      { type: "flame", x: 340, y: 332, w: 72, h: 40 },
-      { type: "flame", x: 570, y: 332, w: 58, h: 40 },
-      { type: "flame", x: 790, y: 332, w: 58, h: 40 },
-      { type: "flame", x: 1030, y: 332, w: 58, h: 40 },
-      { type: "flame", x: 1285, y: 332, w: 72, h: 40 },
-      { type: "flame", x: 1545, y: 332, w: 45, h: 40 },
-      { type: "flame", x: 1755, y: 332, w: 58, h: 40 },
-    ],
-    allowDoubleJump: false,
-  },
-  {
-    id: 2,
-    name: "Level 2",
-    subtitle: "Dubbelhopp",
-    playerStart: { x: 60, y: 280 },
-    goal: { x: 2240, y: 240, w: 64, h: 95 },
-    platformColorA: ["#1dc8ff", "#10395d", "#b8f2ff", "#29b7ff"],
-    platformColorB: ["#33ffb8", "#0d4c3b", "#bfffe8", "#28d9a0"],
-    flameColors: ["#00d4ff", "#41a6ff", "#c6f8ff"],
-    platforms: [
-      { x: 0, y: 340, w: 330, h: 80 },
-      { x: 420, y: 305, w: 120, h: 20 },
-      { x: 680, y: 270, w: 110, h: 20 },
-      { x: 920, y: 250, w: 140, h: 20 },
-      { x: 1170, y: 320, w: 170, h: 20 },
-      { x: 1450, y: 280, w: 150, h: 20 },
-      { x: 1710, y: 255, w: 160, h: 20 },
-      { x: 1970, y: 225, w: 170, h: 20 },
-      { x: 2180, y: 340, w: 220, h: 80 },
-    ],
-    hazards: [
-      { type: "flame", x: 340, y: 332, w: 58, h: 40 },
-      { type: "wall", x: 560, y: 220, w: 34, h: 120 },
-      { type: "flame", x: 820, y: 332, w: 64, h: 40 },
-      { type: "wall", x: 1085, y: 195, w: 38, h: 145 },
-      { type: "flame", x: 1360, y: 332, w: 58, h: 40 },
-      { type: "wall", x: 1640, y: 185, w: 40, h: 155 },
-      { type: "flame", x: 1890, y: 332, w: 64, h: 40 },
-    ],
-    allowDoubleJump: true,
-  },
-];
+const level = {
+  playerStart: { x: 60, y: 280 },
+  goal: { x: 2060, y: 255, w: 58, h: 85 },
+  platforms: [
+    { x: 0, y: 340, w: 340, h: 80 },
+    { x: 430, y: 310, w: 140, h: 20 },
+    { x: 650, y: 280, w: 130, h: 20 },
+    { x: 860, y: 250, w: 150, h: 20 },
+    { x: 1100, y: 310, w: 170, h: 20 },
+    { x: 1380, y: 280, w: 150, h: 20 },
+    { x: 1600, y: 250, w: 140, h: 20 },
+    { x: 1830, y: 290, w: 180, h: 20 },
+    { x: 2010, y: 340, w: 190, h: 80 },
+  ],
+  flames: [
+    { x: 340, y: 332, w: 72, h: 40 },
+    { x: 570, y: 332, w: 58, h: 40 },
+    { x: 790, y: 332, w: 58, h: 40 },
+    { x: 1030, y: 332, w: 58, h: 40 },
+    { x: 1285, y: 332, w: 72, h: 40 },
+    { x: 1545, y: 332, w: 45, h: 40 },
+    { x: 1755, y: 332, w: 58, h: 40 },
+  ],
+};
 
-const createPlayer = (start) => ({
-  x: start.x,
-  y: start.y,
+const createPlayer = () => ({
+  x: level.playerStart.x,
+  y: level.playerStart.y,
   w: 34,
   h: 60,
   vx: 0,
   vy: 0,
   onGround: false,
   facing: 1,
-  jumpsUsed: 0,
 });
 
 function rectsOverlap(a, b) {
@@ -99,10 +56,15 @@ function rectsOverlap(a, b) {
   );
 }
 
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
 function mixColor(a, b, t) {
   const ar = parseInt(a.slice(1, 3), 16);
   const ag = parseInt(a.slice(3, 5), 16);
   const ab = parseInt(a.slice(5, 7), 16);
+
   const br = parseInt(b.slice(1, 3), 16);
   const bg = parseInt(b.slice(3, 5), 16);
   const bb = parseInt(b.slice(5, 7), 16);
@@ -114,17 +76,17 @@ function mixColor(a, b, t) {
   return `rgb(${rr}, ${rg}, ${rb})`;
 }
 
-function AnimatedFlame({ hazard, paused, colors }) {
-  const count = Math.max(3, Math.floor(hazard.w / 18));
+function FlameHazard({ flame, paused }) {
+  const count = Math.max(3, Math.floor(flame.w / 18));
 
   return (
     <div
       style={{
         position: "absolute",
-        left: hazard.x,
-        top: hazard.y,
-        width: hazard.w,
-        height: hazard.h,
+        left: flame.x,
+        top: flame.y,
+        width: flame.w,
+        height: flame.h,
         display: "flex",
         alignItems: "flex-end",
         justifyContent: "center",
@@ -146,14 +108,15 @@ function AnimatedFlame({ hazard, paused, colors }) {
               animation: `flameFlicker ${duration}s ease-in-out ${delay}s infinite alternate`,
               animationPlayState: paused ? "paused" : "running",
               transformOrigin: "bottom center",
-              filter: `drop-shadow(0 0 7px ${colors[1]})`,
+              filter: "drop-shadow(0 0 6px rgba(255,120,0,0.8))",
             }}
           >
             <div
               style={{
                 position: "absolute",
                 inset: 0,
-                background: `linear-gradient(to top, ${colors[0]} 0%, ${colors[1]} 45%, ${colors[2]} 100%)`,
+                background:
+                  "linear-gradient(to top, #ff3b00 0%, #ff7a00 40%, #ffd54a 80%, rgba(255,255,255,0.92) 100%)",
                 borderRadius: "50% 50% 40% 40% / 65% 65% 35% 35%",
                 clipPath: "polygon(50% 0%, 78% 22%, 100% 58%, 72% 100%, 28% 100%, 0% 58%, 22% 22%)",
               }}
@@ -161,35 +124,6 @@ function AnimatedFlame({ hazard, paused, colors }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function EnergyWall({ hazard, paused, colors }) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        left: hazard.x,
-        top: hazard.y,
-        width: hazard.w,
-        height: hazard.h,
-        borderRadius: 8,
-        background: `linear-gradient(to bottom, ${colors[2]}22, ${colors[1]}55, ${colors[0]}99)`,
-        border: `2px solid ${colors[1]}`,
-        boxShadow: `0 0 18px ${colors[1]}88, inset 0 0 18px ${colors[2]}55`,
-        animation: "energyPulse 0.7s ease-in-out infinite alternate",
-        animationPlayState: paused ? "paused" : "running",
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 4,
-          borderRadius: 5,
-          border: `1px solid ${colors[2]}`,
-        }}
-      />
     </div>
   );
 }
@@ -211,6 +145,7 @@ function RealisticNinja({ player, running, paused, invulnerable }) {
           : "drop-shadow(0 0 10px rgba(255,255,255,0.08))",
       }}
     >
+      {/* back arm */}
       <div
         style={{
           position: "absolute",
@@ -221,10 +156,13 @@ function RealisticNinja({ player, running, paused, invulnerable }) {
           background: "linear-gradient(to bottom, #2b2b2b, #0b0b0b)",
           borderRadius: 4,
           transformOrigin: "top center",
+          transform: running ? "rotate(28deg)" : "rotate(8deg)",
           animation: running ? "armSwingBack 0.28s infinite alternate" : "none",
           animationPlayState: paused ? "paused" : "running",
         }}
       />
+
+      {/* body */}
       <div
         style={{
           position: "absolute",
@@ -250,7 +188,19 @@ function RealisticNinja({ player, running, paused, invulnerable }) {
             borderRadius: 5,
           }}
         />
+        <div
+          style={{
+            position: "absolute",
+            left: 3,
+            top: 10,
+            width: 10,
+            height: 1,
+            background: "rgba(255,255,255,0.08)",
+          }}
+        />
       </div>
+
+      {/* front arm */}
       <div
         style={{
           position: "absolute",
@@ -261,10 +211,13 @@ function RealisticNinja({ player, running, paused, invulnerable }) {
           background: "linear-gradient(to bottom, #2b2b2b, #0b0b0b)",
           borderRadius: 4,
           transformOrigin: "top center",
+          transform: running ? "rotate(-26deg)" : "rotate(-8deg)",
           animation: running ? "armSwingFront 0.28s infinite alternate" : "none",
           animationPlayState: paused ? "paused" : "running",
         }}
       />
+
+      {/* head */}
       <div
         style={{
           position: "absolute",
@@ -278,6 +231,14 @@ function RealisticNinja({ player, running, paused, invulnerable }) {
           overflow: "hidden",
         }}
       >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(circle at 50% 15%, rgba(255,255,255,0.06), transparent 40%)",
+          }}
+        />
         <div
           style={{
             position: "absolute",
@@ -315,6 +276,21 @@ function RealisticNinja({ player, running, paused, invulnerable }) {
           />
         </div>
       </div>
+
+      {/* belt flap */}
+      <div
+        style={{
+          position: "absolute",
+          left: 13,
+          top: 36,
+          width: 8,
+          height: 6,
+          background: "#1b1b1b",
+          borderRadius: 2,
+        }}
+      />
+
+      {/* legs */}
       <div
         style={{
           position: "absolute",
@@ -363,10 +339,10 @@ export default function App() {
   const crashTimeoutRef = useRef(null);
   const invulnerableUntilRef = useRef(0);
   const pausedRef = useRef(false);
+  const platformPhaseRef = useRef(0);
   const lastFrameTimeRef = useRef(0);
 
-  const [levelIndex, setLevelIndex] = useState(0);
-  const [player, setPlayer] = useState(createPlayer(levels[0].playerStart));
+  const [player, setPlayer] = useState(createPlayer());
   const [status, setStatus] = useState("Väntar på start");
   const [deaths, setDeaths] = useState(0);
   const [lives, setLives] = useState(MAX_LIVES);
@@ -377,8 +353,6 @@ export default function App() {
   const [platformPhase, setPlatformPhase] = useState(0);
   const [paused, setPaused] = useState(false);
   const [invulnerable, setInvulnerable] = useState(false);
-
-  const currentLevel = levels[levelIndex];
 
   useEffect(() => {
     wonRef.current = won;
@@ -394,7 +368,9 @@ export default function App() {
 
   const stopAllAudio = () => {
     [musicRef.current, spikeSoundRef.current, goalSoundRef.current].forEach((audio) => {
-      if (audio) audio.pause();
+      if (audio) {
+        audio.pause();
+      }
     });
   };
 
@@ -409,6 +385,7 @@ export default function App() {
     ) {
       return;
     }
+
     musicRef.current.volume = 0.35;
     musicRef.current.loop = true;
     musicRef.current.play().catch(() => {});
@@ -436,8 +413,8 @@ export default function App() {
     goalSoundRef.current.play().catch(() => {});
   };
 
-  const resetPlayerPosition = (level = currentLevel) => {
-    setPlayer(createPlayer(level.playerStart));
+  const resetPlayerPosition = () => {
+    setPlayer(createPlayer());
   };
 
   const clearCrashTimeout = () => {
@@ -457,8 +434,7 @@ export default function App() {
     invulnerableUntilRef.current = 0;
     lastFrameTimeRef.current = 0;
 
-    setLevelIndex(0);
-    setPlayer(createPlayer(levels[0].playerStart));
+    setPlayer(createPlayer());
     setStatus("Väntar på start");
     setDeaths(0);
     setLives(MAX_LIVES);
@@ -503,13 +479,14 @@ export default function App() {
       if (nextLives <= 0) {
         setGameOver(true);
         setStatus("Game Over");
+        stopAllAudio();
         return 0;
       }
 
       setStatus(`Aj! ${nextLives} liv kvar`);
 
       crashTimeoutRef.current = setTimeout(() => {
-        resetPlayerPosition(currentLevel);
+        resetPlayerPosition();
         invulnerableUntilRef.current = performance.now() + INVULNERABLE_AFTER_RESPAWN_MS;
         setInvulnerable(true);
         directionRef.current = 1;
@@ -531,8 +508,7 @@ export default function App() {
     invulnerableUntilRef.current = 0;
     lastFrameTimeRef.current = 0;
 
-    setLevelIndex(0);
-    setPlayer(createPlayer(levels[0].playerStart));
+    setPlayer(createPlayer());
     setStatus("Spring!");
     setDeaths(0);
     setLives(MAX_LIVES);
@@ -548,7 +524,9 @@ export default function App() {
       musicRef.current.currentTime = 0;
     }
 
-    setTimeout(() => tryStartMusic(), 0);
+    setTimeout(() => {
+      tryStartMusic();
+    }, 0);
   };
 
   const restartGame = () => {
@@ -564,7 +542,8 @@ export default function App() {
       lastFrameTimeRef.current = timestamp;
 
       if (!pausedRef.current && started && !wonRef.current && !gameOverRef.current) {
-        setPlatformPhase((prev) => prev + deltaMs * 0.0022);
+        platformPhaseRef.current += deltaMs * 0.0022;
+        setPlatformPhase(platformPhaseRef.current);
       }
 
       const now = performance.now();
@@ -601,7 +580,7 @@ export default function App() {
         }
 
         const futureXRect = { x: next.x, y: next.y, w: next.w, h: next.h };
-        for (const p of currentLevel.platforms) {
+        for (const p of level.platforms) {
           if (rectsOverlap(futureXRect, p)) {
             if (next.vx > 0) next.x = p.x - next.w;
           }
@@ -611,13 +590,12 @@ export default function App() {
         next.onGround = false;
 
         const futureYRect = { x: next.x, y: next.y, w: next.w, h: next.h };
-        for (const p of currentLevel.platforms) {
+        for (const p of level.platforms) {
           if (rectsOverlap(futureYRect, p)) {
             if (prev.y + prev.h <= p.y && next.vy >= 0) {
               next.y = p.y - next.h;
               next.vy = 0;
               next.onGround = true;
-              next.jumpsUsed = 0;
             } else if (prev.y >= p.y + p.h && next.vy < 0) {
               next.y = p.y + p.h;
               next.vy = 0;
@@ -630,6 +608,7 @@ export default function App() {
           return prev;
         }
 
+        // mindre, mer rättvis hitbox för att minska dubbel/för tidiga träffar
         const hurtBox = {
           x: next.x + 6,
           y: next.y + 8,
@@ -637,48 +616,31 @@ export default function App() {
           h: next.h - 10,
         };
 
-        for (const hazard of currentLevel.hazards) {
-          const hazardHitBox =
-            hazard.type === "wall"
-              ? { x: hazard.x + 2, y: hazard.y + 2, w: hazard.w - 4, h: hazard.h - 2 }
-              : { x: hazard.x + 4, y: hazard.y + 6, w: hazard.w - 8, h: hazard.h - 8 };
+        for (const flame of level.flames) {
+          const flameHitBox = {
+            x: flame.x + 4,
+            y: flame.y + 6,
+            w: flame.w - 8,
+            h: flame.h - 8,
+          };
 
-          if (rectsOverlap(hurtBox, hazardHitBox)) {
+          if (rectsOverlap(hurtBox, flameHitBox)) {
             triggerCrash();
             return prev;
           }
         }
 
-        if (rectsOverlap(hurtBox, currentLevel.goal)) {
-          if (!hasPlayedGoalSoundRef.current) {
-            hasPlayedGoalSoundRef.current = true;
-            playGoalSound();
-            directionRef.current = 0;
-
-            if (levelIndex < levels.length - 1) {
-              const nextLevelIndex = levelIndex + 1;
-              const nextLevel = levels[nextLevelIndex];
-
-              setStatus(`Level ${currentLevel.id} klar!`);
-              setTimeout(() => {
-                hasPlayedGoalSoundRef.current = false;
-                crashLockRef.current = false;
-                wonRef.current = false;
-                gameOverRef.current = false;
-                invulnerableUntilRef.current = performance.now() + 500;
-                setInvulnerable(true);
-                setLevelIndex(nextLevelIndex);
-                setPlayer(createPlayer(nextLevel.playerStart));
-                setStatus(`Level ${nextLevel.id}! Dubbelhopp aktivt.`);
-                directionRef.current = 1;
-              }, 700);
-            } else {
-              setWon(true);
-              setStatus("Du klarade Ninja Dash!");
-            }
-          }
-          return next;
-        }
+        
+     if (rectsOverlap(hurtBox, level.goal)) {
+  if (!hasPlayedGoalSoundRef.current) {
+    hasPlayedGoalSoundRef.current = true;
+    playGoalSound();
+    setWon(true);
+    setStatus("Du klarade banan!");
+    directionRef.current = 0;
+  }
+  return next;
+}     
 
         return next;
       });
@@ -693,7 +655,7 @@ export default function App() {
       clearCrashTimeout();
       stopAllAudio();
     };
-  }, [started, musicPausedByUser, invulnerable, currentLevel, levelIndex]);
+  }, [started, musicPausedByUser, invulnerable]);
 
   const cameraX = useMemo(() => {
     const raw = player.x - 420;
@@ -707,7 +669,7 @@ export default function App() {
     stopAllAudio();
     setStatus(
       won
-        ? "Du klarade Ninja Dash!"
+        ? "Du klarade banan!"
         : gameOver
         ? "Game Over"
         : started
@@ -725,31 +687,16 @@ export default function App() {
     }
 
     setPlayer((prev) => {
-      if (prev.onGround) {
-        return {
-          ...prev,
-          vy: JUMP_POWER,
-          onGround: false,
-          jumpsUsed: 1,
-        };
-      }
+      if (!prev.onGround) return prev;
 
-      if (currentLevel.allowDoubleJump && prev.jumpsUsed < 2) {
-        setStatus("Dubbelhopp!");
-        return {
-          ...prev,
-          vy: DOUBLE_JUMP_POWER,
-          onGround: false,
-          jumpsUsed: 2,
-        };
-      }
-
-      return prev;
+      return {
+        ...prev,
+        vy: JUMP_POWER,
+        onGround: false,
+      };
     });
 
-    if (!currentLevel.allowDoubleJump || player.jumpsUsed === 0) {
-      setStatus("Hopp!");
-    }
+    setStatus("Hopp!");
   };
 
   return (
@@ -769,26 +716,27 @@ export default function App() {
           50% { transform: scaleY(1.08) rotate(2deg); opacity: 1; }
           100% { transform: scaleY(0.96) rotate(-1deg); opacity: 0.9; }
         }
+
         @keyframes portalPulse {
           0% { box-shadow: 0 0 14px rgba(120, 185, 255, 0.35); }
           100% { box-shadow: 0 0 28px rgba(120, 185, 255, 0.7); }
         }
-        @keyframes energyPulse {
-          0% { transform: scaleY(0.97); opacity: 0.88; }
-          100% { transform: scaleY(1.03); opacity: 1; }
-        }
+
         @keyframes armSwingFront {
           0% { transform: rotate(-26deg); }
           100% { transform: rotate(18deg); }
         }
+
         @keyframes armSwingBack {
           0% { transform: rotate(24deg); }
           100% { transform: rotate(-18deg); }
         }
+
         @keyframes legSwingFront {
           0% { transform: rotate(-18deg); }
           100% { transform: rotate(20deg); }
         }
+
         @keyframes legSwingBack {
           0% { transform: rotate(18deg); }
           100% { transform: rotate(-20deg); }
@@ -813,21 +761,41 @@ export default function App() {
           <div>
             <h1 style={{ margin: 0, fontSize: 42 }}>Ninja Dash</h1>
             <p style={{ marginTop: 8, color: "#a1a1aa" }}>
-              {currentLevel.name}: {currentLevel.subtitle}
+              Klicka i spelrutan för att hoppa över eldarna.
             </p>
           </div>
 
           <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <div style={{ background: "#18181b", border: "1px solid #27272a", padding: "10px 14px", borderRadius: 16 }}>
+            <div
+              style={{
+                background: "#18181b",
+                border: "1px solid #27272a",
+                padding: "10px 14px",
+                borderRadius: 16,
+              }}
+            >
               Status: {status}
             </div>
-            <div style={{ background: "#18181b", border: "1px solid #27272a", padding: "10px 14px", borderRadius: 16 }}>
-              Level: {currentLevel.id}/2
-            </div>
-            <div style={{ background: "#18181b", border: "1px solid #27272a", padding: "10px 14px", borderRadius: 16 }}>
+
+            <div
+              style={{
+                background: "#18181b",
+                border: "1px solid #27272a",
+                padding: "10px 14px",
+                borderRadius: 16,
+              }}
+            >
               Liv: {lives}
             </div>
-            <div style={{ background: "#18181b", border: "1px solid #27272a", padding: "10px 14px", borderRadius: 16 }}>
+
+            <div
+              style={{
+                background: "#18181b",
+                border: "1px solid #27272a",
+                padding: "10px 14px",
+                borderRadius: 16,
+              }}
+            >
               Crashar: {deaths}
             </div>
           </div>
@@ -855,37 +823,21 @@ export default function App() {
             }}
             onClick={jump}
           >
-            {window.innerHeight > window.innerWidth && started && (
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  zIndex: 30,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "rgba(0,0,0,0.88)",
-                  textAlign: "center",
-                  padding: 24,
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 30, fontWeight: "bold", marginBottom: 12 }}>
-                    Rotera mobilen
-                  </div>
-                  <div style={{ color: "#d4d4d8" }}>
-                    Ninja Dash fungerar bäst i landscape.
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div
               style={{
                 position: "absolute",
                 inset: 0,
                 background:
                   "radial-gradient(circle at 75% 18%, rgba(255,255,255,0.06), transparent 18%), radial-gradient(circle at 15% 20%, rgba(255,255,255,0.05), transparent 15%), radial-gradient(circle at 45% 15%, rgba(255,255,255,0.03), transparent 12%)",
+              }}
+            />
+
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(to top, rgba(255,80,0,0.06), transparent 20%)",
               }}
             />
 
@@ -911,10 +863,26 @@ export default function App() {
                 ☾
               </div>
 
-              {currentLevel.platforms.map((platform, i) => {
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  bottom: 118,
+                  width: WORLD_WIDTH,
+                  height: 110,
+                  background:
+                    "linear-gradient(to top, #111, transparent), repeating-linear-gradient(120deg, #141414 0 80px, #101010 80px 160px)",
+                  clipPath:
+                    "polygon(0% 100%, 8% 70%, 14% 82%, 22% 52%, 28% 76%, 36% 45%, 44% 80%, 52% 58%, 60% 84%, 69% 44%, 76% 76%, 84% 54%, 92% 80%, 100% 60%, 100% 100%)",
+                  opacity: 0.6,
+                }}
+              />
+
+              {level.platforms.map((platform, i) => {
                 const t = (Math.sin(platformPhase + i * 0.9) + 1) / 2;
-                const [aTop, aBody, aBorder, aGlow] = currentLevel.platformColorA;
-                const [bTop, bBody, bBorder, bGlow] = currentLevel.platformColorB;
+                const topColor = mixColor("#e23d61", "#b46cff", t);
+                const bodyColor = mixColor("#5b1027", "#35125c", t);
+                const glowColor = mixColor("#b83657", "#8f52ff", t);
 
                 return (
                   <div
@@ -925,29 +893,26 @@ export default function App() {
                       top: platform.y,
                       width: platform.w,
                       height: platform.h,
-                      background: `linear-gradient(to bottom, ${mixColor(aTop, bTop, t)}, ${mixColor(aBody, bBody, t)})`,
-                      borderTop: `2px solid ${mixColor(aBorder, bBorder, t)}`,
-                      boxShadow: `inset 0 8px 16px rgba(255,255,255,0.05), inset 0 -8px 16px rgba(0,0,0,0.25), 0 0 12px ${mixColor(aGlow, bGlow, t)}44`,
+                      background: `linear-gradient(to bottom, ${topColor}, ${bodyColor})`,
+                      borderTop: `2px solid ${mixColor("#ff87a0", "#d5b2ff", t)}`,
+                      boxShadow: `inset 0 8px 16px rgba(255,255,255,0.05), inset 0 -8px 16px rgba(0,0,0,0.25), 0 0 12px ${glowColor}44`,
+                      transition: paused ? "none" : "background 0.08s linear, border-top-color 0.08s linear, box-shadow 0.08s linear",
                     }}
                   />
                 );
               })}
 
-              {currentLevel.hazards.map((hazard, i) =>
-                hazard.type === "wall" ? (
-                  <EnergyWall key={i} hazard={hazard} paused={paused} colors={currentLevel.flameColors} />
-                ) : (
-                  <AnimatedFlame key={i} hazard={hazard} paused={paused} colors={currentLevel.flameColors} />
-                )
-              )}
+              {level.flames.map((flame, i) => (
+                <FlameHazard key={i} flame={flame} paused={paused} />
+              ))}
 
               <div
                 style={{
                   position: "absolute",
-                  left: currentLevel.goal.x,
-                  top: currentLevel.goal.y,
-                  width: currentLevel.goal.w,
-                  height: currentLevel.goal.h,
+                  left: level.goal.x,
+                  top: level.goal.y,
+                  width: level.goal.w,
+                  height: level.goal.h,
                   border: "2px solid #6ea8ff",
                   background:
                     "linear-gradient(to bottom, rgba(60,120,255,0.18), rgba(10,15,30,0.2))",
@@ -977,7 +942,7 @@ export default function App() {
                 <div
                   style={{
                     position: "absolute",
-                    left: currentLevel.goal.x - 150,
+                    left: level.goal.x - 120,
                     top: 120,
                     color: "#c7e2ff",
                     fontWeight: "bold",
@@ -985,7 +950,7 @@ export default function App() {
                     textShadow: "0 0 12px rgba(110,168,255,0.8)",
                   }}
                 >
-                  Ninja Dash klarat
+                  Mål nått
                 </div>
               )}
 
@@ -1004,11 +969,18 @@ export default function App() {
                     boxShadow: "0 0 30px rgba(155,28,28,0.45)",
                   }}
                 >
-                  <div style={{ fontSize: 34, fontWeight: "bold", color: "#ffb4b4", marginBottom: 8 }}>
+                  <div
+                    style={{
+                      fontSize: 34,
+                      fontWeight: "bold",
+                      color: "#ffb4b4",
+                      marginBottom: 8,
+                    }}
+                  >
                     GAME OVER
                   </div>
                   <div style={{ color: "#d4d4d8", fontSize: 18 }}>
-                    Ninjan klarade inte banan.
+                    Ninjan klarade inte elden.
                   </div>
                 </div>
               )}
@@ -1028,16 +1000,29 @@ export default function App() {
                     boxShadow: "0 0 30px rgba(0,0,0,0.45)",
                   }}
                 >
-                  <div style={{ fontSize: 38, fontWeight: "bold", marginBottom: 10, color: "#f4f4f5" }}>
+                  <div
+                    style={{
+                      fontSize: 38,
+                      fontWeight: "bold",
+                      marginBottom: 10,
+                      color: "#f4f4f5",
+                    }}
+                  >
                     Ninja Dash
                   </div>
-                  <div style={{ color: "#d4d4d8", fontSize: 17, lineHeight: 1.5, marginBottom: 18 }}>
-                    Level 1: hoppa över eld.
-                    <br />
-                    Level 2: dubbelhoppa över energiväggar.
-                    <br />
-                    Spelet fungerar bäst i landscape.
+
+                  <div
+                    style={{
+                      color: "#d4d4d8",
+                      fontSize: 17,
+                      lineHeight: 1.5,
+                      marginBottom: 18,
+                    }}
+                  >
+                    Ninjan börjar springa direkt. Klicka var som helst i spelrutan
+                    för att hoppa över eldarna. Du har tre liv.
                   </div>
+
                   <button
                     onClick={startGame}
                     style={{
@@ -1105,7 +1090,7 @@ export default function App() {
                 padding: "10px 14px",
               }}
             >
-              Styrning: klicka i spelrutan för att hoppa. I level 2 kan du dubbelhoppa.
+              Styrning: tryck Starta spelet, sedan klickar du i spelrutan för att hoppa.
             </div>
           </div>
         </div>
